@@ -1,0 +1,16 @@
+# Logs
+logs
+*.log
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.vercel/
+node_modules/
+dist/
+
+.env
+.env.*
