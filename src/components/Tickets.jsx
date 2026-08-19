@@ -44,6 +44,7 @@ const CASH = [
   'Impresora sin papel',
   'Impresora rota',
   'Error de impresión',
+  'Retiro de dinero'
 ];
 const BINGO = ['Falla bingera', 'Falla Bing Data', 'Falla impresora', 'Falla PC'];
 const REDES = ['Sin conexión', 'Sector sin red', 'AP caído', 'Switch caído'];
@@ -221,7 +222,7 @@ export default function Tickets({ usuario, onLogout }) {
   const formatearNombre = (texto) => {
   return texto
     .toLowerCase()
-    .replace(/\b\w/g, (letra) => letra.toUpperCase());
+    .replace(/(^\p{L}|\s+\p{L})/gu, (letra) => letra.toUpperCase());
 };
 
   return (
@@ -330,13 +331,13 @@ export default function Tickets({ usuario, onLogout }) {
               <TextField
                 fullWidth
                 size="small"
-                label="2. UID"
+                label="2. UID/ Ubicación"
                 variant="outlined"
                 placeholder="123456"
                 name="uid"
                 value={uid}
-                onChange={(e) => setUid(e.target.value.slice(0, 20))}
-                inputProps={{ maxLength: 20 }}
+                onChange={(e) => setUid(e.target.value.slice(0, 30))}
+                inputProps={{ maxLength: 30 }}
                 sx={autofillSx}
               />
 

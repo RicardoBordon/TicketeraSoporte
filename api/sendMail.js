@@ -106,10 +106,13 @@ export default async function handler(req, res) {
       },
     });
 
+  const esUidValido = /^\d{1,7}$/.test(uid);
+  const fragmentoUid = esUidValido ? `UID ${uid} | ` : uid;
+
     await transporter.sendMail({
       from: gmail.email,
       to: ["soporte@grupomidas.com.ar"],
-      subject: `${sala} | ${categoriaAsunto} | UID ${uid} | ${subcategoria}`,
+      subject: `${sala} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
       text: `
 Categoría: ${categoria} — ${subcategoria}
 Criticidad: ${criticidad}
