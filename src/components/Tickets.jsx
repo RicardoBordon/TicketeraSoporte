@@ -59,6 +59,7 @@ const INFRA = [
   'Pedido de herramientas',
   'Pedido de repuestos',
 ];
+const SUBCATEGORIA_PERSONALIZADA = 'Personalizada';
 
 const CRITICIDAD = ['Crítica', 'Alta', 'Media', 'Baja'];
 const TURNOS = ['Mañana', 'Tarde', 'Noche'];
@@ -99,6 +100,7 @@ export default function Tickets({ usuario, onLogout }) {
   const [turno, setTurno] = useState('');
   const [fecha, setFecha] = useState(formatFechaLatin(new Date()));
   const [subcat, setSubcat] = useState('');
+  const [subcatPersonalizada, setSubcatPersonalizada] = useState('');
   const [tecnico, setTecnico] = useState('');
   const [motivo, setMotivo] = useState('');
   const [status, setStatus] = useState('');
@@ -144,6 +146,7 @@ export default function Tickets({ usuario, onLogout }) {
  const handleCategoriaChange = (nombreCategoria) => {
   setCat(nombreCategoria);
   setSubcat('');
+  setSubcatPersonalizada('');
 
   const categoria = categorias.find(c => c.nombre === nombreCategoria);
 
@@ -151,6 +154,9 @@ export default function Tickets({ usuario, onLogout }) {
 };
 
   const subcategoriaOptions = subcategoriasPorCategoria[cat] ?? [];
+  const subcategoriaSeleccionada = subcat === SUBCATEGORIA_PERSONALIZADA
+    ? subcatPersonalizada.trim()
+    : subcat;
   const fechaCompleta = fecha.replace(/[^0-9]/g, '').length === 8;
   const fechaValida = fechaCompleta && parseFechaLatin(fecha) !== null;
 
@@ -159,7 +165,7 @@ export default function Tickets({ usuario, onLogout }) {
     uid &&
     tecnico &&
     cat &&
-    subcat &&
+    subcategoriaSeleccionada &&
     criticidad &&
     turno &&
     fechaValida
@@ -187,7 +193,7 @@ export default function Tickets({ usuario, onLogout }) {
           tecnico,
           categoria: cat,
           categoriaAsunto,
-          subcategoria: subcat,
+          subcategoria: subcategoriaSeleccionada,
           criticidad,
           turno,
           fecha,
@@ -202,6 +208,7 @@ export default function Tickets({ usuario, onLogout }) {
         setUid('');
         setCat('');
         setSubcat('');
+        setSubcatPersonalizada('');
         setCriticidad('');
         setTurno('');
         setTecnico('');
@@ -398,7 +405,25 @@ export default function Tickets({ usuario, onLogout }) {
                     {s}
                   </MenuItem>
                 ))}
+                <MenuItem value={SUBCATEGORIA_PERSONALIZADA}>
+                  {SUBCATEGORIA_PERSONALIZADA}
+                </MenuItem>
               </TextField>
+
+              {subcat === SUBCATEGORIA_PERSONALIZADA && (
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Sub-Categoría personalizada"
+                  name="subcategoriaPersonalizada"
+                  placeholder="Ingresa la subcategoría"
+                  value={subcatPersonalizada}
+                  onChange={(e) => setSubcatPersonalizada(e.target.value.slice(0, 100))}
+                  inputProps={{ maxLength: 100 }}
+                  required
+                  variant="outlined"
+                />
+              )}
 
               <TextField
                 fullWidth
@@ -411,7 +436,13 @@ export default function Tickets({ usuario, onLogout }) {
                 multiline
                 minRows={3}
                 inputProps={{ maxLength: 300 }}
-                sx={autofillSx}
+                sx={{
+                  ...autofillSx,
+                  '& .MuiInputBase-input': {
+                    ...autofillSx['& .MuiInputBase-input'],
+                    textAlign: 'left',
+                  },
+                }}
               />
 
               <FormControl fullWidth size="small">
@@ -494,7 +525,7 @@ export default function Tickets({ usuario, onLogout }) {
                 Técnico: <strong>{tecnico || '...'}</strong> | Categoría: <strong>{cat || '...'}</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Subcategoría: <strong>{subcat || '...'}</strong>
+                Subcategoría: <strong>{subcategoriaSeleccionada || '...'}</strong>
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Criticidad: <strong>{criticidad || '...'}</strong>

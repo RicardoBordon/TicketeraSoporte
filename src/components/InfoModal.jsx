@@ -272,7 +272,7 @@ export default function InfoModal({ open, onClose }) {
                   Cash Handling
                 </Box>
                 <Box component="td" sx={{ py: 1.25, px: 2, borderBottom: '1px solid #f0f0f0' }}>
-                  Billete trabado, Ticket trabado, Validador no acepta, Validador fuera de servicio, Impresora sin papel, Impresora rota, Error de impresión
+                  Billete trabado, Ticket trabado, Validador no acepta, Validador fuera de servicio, Impresora sin papel, Impresora rota, Error de impresión, Retiro de dinero  
                 </Box>
               </Box>
               <Box component="tr">

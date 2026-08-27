@@ -107,7 +107,7 @@ export default async function handler(req, res) {
     });
 
   const esUidValido = /^\d{1,7}$/.test(uid);
-  const fragmentoUid = esUidValido ? `UID ${uid} | ` : uid;
+  const fragmentoUid = esUidValido ? `UID ${uid} ` : uid;
 
     await transporter.sendMail({
       from: gmail.email,
