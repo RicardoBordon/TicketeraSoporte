@@ -111,7 +111,7 @@ export default async function handler(req, res) {
 
     await transporter.sendMail({
       from: gmail.email,
-      to: ["soporte@grupomidas.com"],
+      to: ["soporte@grupomidas.com.ar"],
       subject: `${sala} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
       text: `
 Categoría: ${categoria} — ${subcategoria}
