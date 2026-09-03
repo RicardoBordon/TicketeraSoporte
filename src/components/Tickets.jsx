@@ -422,6 +422,8 @@ export default function Tickets({ usuario, onLogout }) {
                   inputProps={{ maxLength: 100 }}
                   required
                   variant="outlined"
+                  sx={autofillSx}
+                  
                 />
               )}
 

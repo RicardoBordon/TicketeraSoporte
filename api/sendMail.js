@@ -8,29 +8,29 @@ function obtenerCredencialesGmail(sala) {
   const cuentas = {
     CASEROS: {
       email: process.env.CASEROS_EMAIL,
-      clientId: process.env.CASEROS_CLIENT_ID,
-      clientSecret: process.env.CASEROS_CLIENT_SECRET,
+      clientId: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.CASEROS_REFRESH_TOKEN,
     },
 
     MERLO: {
       email: process.env.MERLO_EMAIL,
-      clientId: process.env.MERLO_CLIENT_ID,
-      clientSecret: process.env.MERLO_CLIENT_SECRET,
+      clientId: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.MERLO_REFRESH_TOKEN,
     },
 
     CIUDADELA: {
       email: process.env.CIUDADELA_EMAIL,
-      clientId: process.env.CIUDADELA_CLIENT_ID,
-      clientSecret: process.env.CIUDADELA_CLIENT_SECRET,
+      clientId: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.CIUDADELA_REFRESH_TOKEN,
     },
 
     HURLINGHAM: {
       email: process.env.HURLINGHAM_EMAIL,
-      clientId: process.env.HURLINGHAM_CLIENT_ID,
-      clientSecret: process.env.HURLINGHAM_CLIENT_SECRET,
+      clientId: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
       refreshToken: process.env.HURLINGHAM_REFRESH_TOKEN,
     },
   };
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
 
     await transporter.sendMail({
       from: gmail.email,
-      to: ["soporte@grupomidas.com.ar"],
+      to: ["soporte@grupomidas.com"],
       subject: `${sala} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
       text: `
 Categoría: ${categoria} — ${subcategoria}

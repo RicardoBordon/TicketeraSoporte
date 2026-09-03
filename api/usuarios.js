@@ -6,17 +6,17 @@ const USERS = [
   },
   {
     usuario: "tecnicosmerlo",
-    password: "1234",
+    password: "tecnicomer",
     sala: "MERLO",
   },
   {
     usuario: "tecnicosciudadela",
-    password: "1234",
+    password: "tecnicociu",
     sala: "CIUDADELA",
   },
   {
     usuario: "tecnicoshurlingham",
-    password: "1234",
+    password: "tecnicohur",
     sala: "HURLINGHAM",
   },
 ];
