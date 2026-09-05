@@ -171,6 +171,19 @@ export default function Tickets({ usuario, onLogout }) {
     setShowToast(true);
   };
 
+  const cerrarToast = () => {
+    setShowToast(false);
+    setStatus('');
+    window.requestAnimationFrame(() => uidInputRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (!showToast || !status.includes('éxito')) return undefined;
+
+    const temporizador = window.setTimeout(cerrarToast, 3000);
+    return () => window.clearTimeout(temporizador);
+  }, [showToast, status]);
+
   const parseFechaLatin = (value) => {
     const cleaned = value.replace(/[^0-9]/g, '');
 
@@ -610,10 +623,7 @@ export default function Tickets({ usuario, onLogout }) {
               </Button>
               {showToast && status && (
                 <Box
-                  onClick={status === 'Enviando...' ? undefined : () => {
-                    setShowToast(false);
-                    setStatus('');
-                  }}
+                  onClick={status === 'Enviando...' ? undefined : cerrarToast}
                   sx={{
                     position: 'fixed',
                     inset: 0,
