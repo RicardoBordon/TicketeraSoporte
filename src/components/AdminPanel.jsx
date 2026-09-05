@@ -11,13 +11,24 @@ import {
   Alert,
   CircularProgress,
   Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from "@mui/material";
+import EditOutlined from "@mui/icons-material/EditOutlined";
 import autofillSx from "../styles/autofillSx";
 
 export default function AdminPanel({ onSesionExpirada }) {
   const [config, setConfig] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [credencialSolicitada, setCredencialSolicitada] = useState(null);
+  const [credencialesEditables, setCredencialesEditables] = useState({
+    clientId: false,
+    clientSecret: false,
+  });
   const [mensaje, setMensaje] = useState(() => {
     const parametros = new URLSearchParams(window.location.search);
     const resultadoGoogle = parametros.get("google");
@@ -82,6 +93,7 @@ export default function AdminPanel({ onSesionExpirada }) {
       const data = await respuesta.json();
 
       if (data.ok) {
+        setCredencialesEditables({ clientId: false, clientSecret: false });
         setMensaje({ tipo: "success", texto: "Configuración guardada correctamente" });
       } else {
         setMensaje({ tipo: "error", texto: data.mensaje || "No se pudo guardar" });
@@ -95,6 +107,7 @@ export default function AdminPanel({ onSesionExpirada }) {
   };
 
   const handleLogout = async () => {
+    setCredencialesEditables({ clientId: false, clientSecret: false });
     try {
       await fetch("/api/admin-logout", { method: "POST", credentials: "include" });
     } catch (error) {
@@ -121,6 +134,11 @@ export default function AdminPanel({ onSesionExpirada }) {
   };
 
   const cerrarMensaje = () => setMensaje(null);
+
+  const confirmarEdicionCredencial = () => {
+    setCredencialesEditables((prev) => ({ ...prev, [credencialSolicitada]: true }));
+    setCredencialSolicitada(null);
+  };
 
   if (cargando) {
     return (
@@ -189,24 +207,51 @@ export default function AdminPanel({ onSesionExpirada }) {
                 />
 
                 <Divider />
-                <Typography variant="subtitle2" sx={{ color: "#425466", fontWeight: 700 }}>Credenciales de Google</Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Client ID"
-                  value={config.clientId}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, clientId: e.target.value }))}
-                  sx={autofillSx}
-                />
-                <TextField
-                  fullWidth
-                  size="small"
-                  label="Client Secret"
-                  type="password"
-                  value={config.clientSecret}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, clientSecret: e.target.value }))}
-                  sx={autofillSx}
-                />
+                <Typography variant="subtitle2" sx={{ color: "#425466", fontWeight: 700 }}>Credenciales App de Cloud (Modificable en caso de migración)</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Client ID"
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={!credencialesEditables.clientId}
+                    value={config.clientId}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, clientId: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                    sx={autofillSx}
+                  />
+                  <IconButton
+                    aria-label="Editar Client ID"
+                    title="Editar Client ID"
+                    onClick={() => setCredencialSolicitada("clientId")}
+                    sx={{ width: 40, height: 40, border: "1px solid #1769aa", borderRadius: 0, color: "#1769aa", flexShrink: 0 }}
+                  >
+                    <EditOutlined />
+                  </IconButton>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Client Secret"
+                    type="password"
+                    autoComplete="new-password"
+                    disabled={!credencialesEditables.clientSecret}
+                    value={config.clientSecret}
+                    onChange={(e) => setConfig((prev) => ({ ...prev, clientSecret: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                    sx={autofillSx}
+                  />
+                  <IconButton
+                    aria-label="Editar Client Secret"
+                    title="Editar Client Secret"
+                    onClick={() => setCredencialSolicitada("clientSecret")}
+                    sx={{ width: 40, height: 40, border: "1px solid #1769aa", borderRadius: 0, color: "#1769aa", flexShrink: 0 }}
+                  >
+                    <EditOutlined />
+                  </IconButton>
+                </Stack>
               </Stack>
             </Box>
 
@@ -340,6 +385,26 @@ export default function AdminPanel({ onSesionExpirada }) {
             </Box>
           </Box>
         )}
+
+        <Dialog
+          open={Boolean(credencialSolicitada)}
+          onClose={() => setCredencialSolicitada(null)}
+          aria-labelledby="editar-credenciales-titulo"
+          PaperProps={{ sx: { backgroundColor: "#ffffff", color: "#142b42" } }}
+        >
+          <DialogTitle id="editar-credenciales-titulo" sx={{ color: "#142b42", fontWeight: 700 }}>
+            Editar {credencialSolicitada === "clientId" ? "Client ID" : "Client Secret"}
+          </DialogTitle>
+          <DialogContent sx={{ color: "#333333" }}>
+            ¿Confirmás que querés habilitar la edición de esta Credencial App de Cloud?
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCredencialSolicitada(null)}>Cancelar</Button>
+            <Button variant="contained" onClick={confirmarEdicionCredencial} autoFocus>
+              Confirmar
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </Box>
   );
