@@ -11,7 +11,10 @@ import {
   Select,
   MenuItem,
   Button,
+  CircularProgress,
 } from '@mui/material';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import InfoModal from './InfoModal';
 import autofillSx from '../styles/autofillSx';
 
@@ -166,11 +169,6 @@ export default function Tickets({ usuario, onLogout }) {
   const mostrarToast = (mensaje) => {
     setStatus(mensaje);
     setShowToast(true);
-
-    window.setTimeout(() => {
-      setShowToast(false);
-      setStatus('');
-    }, 6000);
   };
 
   const parseFechaLatin = (value) => {
@@ -237,6 +235,8 @@ export default function Tickets({ usuario, onLogout }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (status === 'Enviando...') return;
 
     if (!camposObligatoriosCompletos) {
       mostrarToast('Completa todos los campos obligatorios');
@@ -606,11 +606,11 @@ export default function Tickets({ usuario, onLogout }) {
 
             <Box sx={{ mt: 2, mb: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
               <Button type="submit" variant="contained" color="primary" size="medium" sx={{ width: '100%', maxWidth: 150 }}>
-                Enviar
+                {status === 'Enviando...' ? 'Enviando...' : 'Enviar'}
               </Button>
               {showToast && status && (
                 <Box
-                  onClick={() => {
+                  onClick={status === 'Enviando...' ? undefined : () => {
                     setShowToast(false);
                     setStatus('');
                   }}
@@ -644,7 +644,25 @@ export default function Tickets({ usuario, onLogout }) {
                       wordBreak: 'break-word',
                     }}
                   >
-                    {status}
+                    {status === 'Enviando...' ? (
+                      <>
+                        <CircularProgress
+                          size={36}
+                          thickness={5}
+                          sx={{ display: 'block', mx: 'auto', mb: 1, color: 'white' }}
+                        />
+                        {status}
+                      </>
+                    ) : (
+                      <>
+                        {status.includes('éxito') ? (
+                          <CheckCircleOutlineIcon sx={{ display: 'block', mx: 'auto', mb: 1, fontSize: 40 }} />
+                        ) : (
+                          <ErrorOutlineIcon sx={{ display: 'block', mx: 'auto', mb: 1, fontSize: 40 }} />
+                        )}
+                        {status}
+                      </>
+                    )}
                   </Box>
                 </Box>
               )}
