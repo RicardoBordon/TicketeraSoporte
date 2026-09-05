@@ -15,7 +15,6 @@ import {
 import InfoModal from './InfoModal';
 import autofillSx from '../styles/autofillSx';
 
-const SALAS = ['CIUDADELA', 'CASEROS', 'MERLO', 'HURLINGHAM'];
 const categorias = [
   { nombre: 'Slots', asunto: 'SLOT' },
   { nombre: 'Cash Handiling', asunto: 'CASH' },
@@ -93,7 +92,7 @@ const formatFechaInput = (value) => {
 };
 
 export default function Tickets({ usuario, onLogout }) {
-  const [sala, setSala] = useState(usuario?.sala || '');
+  const [sala] = useState(usuario?.sala || '');
   const [uid, setUid] = useState('');
   const [cat, setCat] = useState('');
   const [criticidad, setCriticidad] = useState('');
@@ -293,9 +292,6 @@ export default function Tickets({ usuario, onLogout }) {
               variant="contained"
               size="small"
               onClick={() => {
-                try {
-                  localStorage.removeItem('usuario');
-                } catch (e) {}
                 if (typeof onLogout === 'function') onLogout();
               }}
               sx={{

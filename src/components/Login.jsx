@@ -8,13 +8,17 @@ import {
   TextField,
   Button,
   Alert,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 import autofillSx from '../styles/autofillSx';
 
 export default function Login({ onLogin }) {
 
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [error, setError] = useState("");
 
 const handleSubmit = async (e) => {
@@ -30,6 +34,7 @@ const handleSubmit = async (e) => {
       headers: {
         "Content-Type": "application/json"
       },
+      credentials: "include",
       body: JSON.stringify({
         usuario,
         password
@@ -38,14 +43,7 @@ const handleSubmit = async (e) => {
 
     const data = await respuesta.json();
 
-    console.log(data);
-
     if (data.ok) {
-
-      localStorage.setItem(
-        "usuario",
-        JSON.stringify(data.usuario)
-      );
 
       onLogin(data.usuario);
 
@@ -146,12 +144,36 @@ const handleSubmit = async (e) => {
 
                 <TextField
                   label="Contraseña"
-                  type="password"
+                  type={mostrarPassword ? "text" : "password"}
                   size="small"
                   value={password}
                   onChange={(e)=>setPassword(e.target.value)}
                   fullWidth
-                  sx={autofillSx}
+                  sx={{
+                    ...autofillSx,
+                    "& .MuiInputBase-root": { position: "relative" },
+                    "& .MuiInputAdornment-root": {
+                      position: "absolute",
+                      right: 8,
+                    },
+                  }}
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={mostrarPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                            onClick={() => setMostrarPassword((visible) => !visible)}
+                            edge="end"
+                            size="small"
+                            sx={{ color: "#8a8f98", "&:hover": { color: "#1976d2" } }}
+                          >
+                            {mostrarPassword ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
 
 

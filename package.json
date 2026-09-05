@@ -12,10 +12,14 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.2.0",
+    "@vercel/global-config": "^1.5.1",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
-    "googleapis": "^173.0.0",
-    "nodemailer": "^9.0.3",
+    "googleapis": "^178.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.0.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

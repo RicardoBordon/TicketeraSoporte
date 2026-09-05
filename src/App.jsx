@@ -1,60 +1,48 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Tickets from "./components/Tickets";
 import Login from "./components/Login";
+import AdminPanel from "./components/AdminPanel";
 
 function App() {
+  const [usuario, setUsuario] = useState(null);
+  const [cargandoSesion, setCargandoSesion] = useState(true);
 
-  const [usuario, setUsuario] = useState(() => {
-
-    const guardado = localStorage.getItem("usuario");
-
-    return guardado
-      ? JSON.parse(guardado)
-      : null;
-
-  });
-
+  useEffect(() => {
+    fetch("/api/session", { credentials: "include" })
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
+      .then((data) => setUsuario(data?.ok ? data.usuario : null))
+      .catch(() => setUsuario(null))
+      .finally(() => setCargandoSesion(false));
+  }, []);
 
   const handleLogin = (usuarioLogueado) => {
-
-    localStorage.setItem(
-      "usuario",
-      JSON.stringify(usuarioLogueado)
-    );
-
     setUsuario(usuarioLogueado);
-
   };
 
-
-  const handleLogout = () => {
-
-    localStorage.removeItem("usuario");
-
+  const handleLogout = async () => {
+    await fetch("/api/logout", { method: "POST", credentials: "include" });
     setUsuario(null);
-
   };
 
+  const handleSesionAdminExpirada = useCallback(() => {
+    setUsuario(null);
+  }, []);
+
+  if (cargandoSesion) return null;
+
+  if (usuario?.rol === "admin") {
+    return <AdminPanel onSesionExpirada={handleSesionAdminExpirada} />;
+  }
 
   return (
     <>
-      {
-        usuario
-          ? (
-              <Tickets
-                usuario={usuario}
-                onLogout={handleLogout}
-              />
-            )
-          : (
-              <Login
-                onLogin={handleLogin}
-              />
-            )
-      }
+      {usuario ? (
+        <Tickets usuario={usuario} onLogout={handleLogout} />
+      ) : (
+        <Login onLogin={handleLogin} />
+      )}
     </>
   );
 }
 
 export default App;
-

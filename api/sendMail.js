@@ -1,41 +1,48 @@
 import dotenv from "dotenv";
 import { google } from "googleapis";
 import nodemailer from "nodemailer";
+import { get } from "@vercel/global-config";
+import { exigirSala } from "./_lib/auth.js";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" });
 
-function obtenerCredencialesGmail(sala) {
-  const cuentas = {
-    CASEROS: {
-      email: process.env.CASEROS_EMAIL,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.CASEROS_REFRESH_TOKEN,
-    },
 
-    MERLO: {
-      email: process.env.MERLO_EMAIL,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.MERLO_REFRESH_TOKEN,
-    },
-
-    CIUDADELA: {
-      email: process.env.CIUDADELA_EMAIL,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.CIUDADELA_REFRESH_TOKEN,
-    },
-
-    HURLINGHAM: {
-      email: process.env.HURLINGHAM_EMAIL,
-      clientId: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
-      refreshToken: process.env.HURLINGHAM_REFRESH_TOKEN,
+// Config por defecto: se usa si todavía no guardaste nada desde el panel
+// de admin, para no romper lo que ya tenías funcionando.
+function configPorDefecto() {
+  return {
+    emailDestino: process.env.EMAIL_DESTINO || "soporte@grupomidas.com.ar",
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+    salas: {
+      CASEROS: {
+        email: process.env.CASEROS_EMAIL,
+        refreshToken: process.env.CASEROS_REFRESH_TOKEN,
+      },
+      MERLO: {
+        email: process.env.MERLO_EMAIL,
+        refreshToken: process.env.MERLO_REFRESH_TOKEN,
+      },
+      CIUDADELA: {
+        email: process.env.CIUDADELA_EMAIL,
+        refreshToken: process.env.CIUDADELA_REFRESH_TOKEN,
+      },
+      HURLINGHAM: {
+        email: process.env.HURLINGHAM_EMAIL,
+        refreshToken: process.env.HURLINGHAM_REFRESH_TOKEN,
+      },
     },
   };
+}
 
-  return cuentas[sala];
+async function obtenerConfig() {
+  try {
+    const guardada = await get("config");
+    if (guardada) return guardada;
+  } catch (error) {
+    console.error("No se pudo leer config de Global Config, uso variables de entorno:", error);
+  }
+  return configPorDefecto();
 }
 
 export default async function handler(req, res) {
@@ -46,9 +53,11 @@ export default async function handler(req, res) {
     });
   }
 
+  const usuarioSala = exigirSala(req, res);
+  if (!usuarioSala) return;
+
   try {
     const {
-      sala,
       uid,
       tecnico,
       categoria,
@@ -60,28 +69,29 @@ export default async function handler(req, res) {
       motivo,
     } = req.body;
 
-    const salaFormateada = String(sala || '')
+    const salaAutorizada = usuarioSala.sala;
+    const salaFormateada = String(salaAutorizada || '')
       .toLowerCase()
       .replace(/(^|\s)([a-z])/g, (match, space, letter) => `${space}${letter.toUpperCase()}`);
 
-    const gmail = obtenerCredencialesGmail(sala);
+    const config = await obtenerConfig();
+    const gmail = config.salas?.[salaAutorizada];
 
     if (!gmail) {
-      throw new Error(`No existe configuración para la sala: ${sala}`);
+      throw new Error(`No existe configuración para la sala: ${salaAutorizada}`);
     }
 
-    if (
-      !gmail.email ||
-      !gmail.clientId ||
-      !gmail.clientSecret ||
-      !gmail.refreshToken
-    ) {
-      throw new Error(`Faltan credenciales para la sala: ${sala}`);
+    if (!config.clientId || !config.clientSecret) {
+      throw new Error("Faltan Client ID/Client Secret en la configuración");
+    }
+
+    if (!gmail.email || !gmail.refreshToken) {
+      throw new Error(`Faltan credenciales para la sala: ${salaAutorizada}`);
     }
 
     const oauth2Client = new google.auth.OAuth2(
-      gmail.clientId,
-      gmail.clientSecret
+      config.clientId,
+      config.clientSecret
     );
 
     oauth2Client.setCredentials({
@@ -99,8 +109,8 @@ export default async function handler(req, res) {
       auth: {
         type: "OAuth2",
         user: gmail.email,
-        clientId: gmail.clientId,
-        clientSecret: gmail.clientSecret,
+        clientId: config.clientId,
+        clientSecret: config.clientSecret,
         refreshToken: gmail.refreshToken,
         accessToken: accessToken.token,
       },
@@ -111,8 +121,8 @@ export default async function handler(req, res) {
 
     await transporter.sendMail({
       from: gmail.email,
-      to: ["soporte@grupomidas.com.ar"],
-      subject: `${sala} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
+      to: [config.emailDestino],
+      subject: `${salaAutorizada} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
       text: `
 Categoría: ${categoria} — ${subcategoria}
 Criticidad: ${criticidad}

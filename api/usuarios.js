@@ -1,24 +1,28 @@
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
+
 const USERS = [
   {
-    usuario: "tecnicoscaseros",
-    password: "tecnicocas",
+    usuario: process.env.SALA_CASEROS_USER,
+    passwordHash: process.env.SALA_CASEROS_PASSWORD_HASH,
     sala: "CASEROS",
   },
   {
-    usuario: "tecnicosmerlo",
-    password: "tecnicomer",
+    usuario: process.env.SALA_MERLO_USER,
+    passwordHash: process.env.SALA_MERLO_PASSWORD_HASH,
     sala: "MERLO",
   },
   {
-    usuario: "tecnicosciudadela",
-    password: "tecnicociu",
+    usuario: process.env.SALA_CIUDADELA_USER,
+    passwordHash: process.env.SALA_CIUDADELA_PASSWORD_HASH,
     sala: "CIUDADELA",
   },
   {
-    usuario: "tecnicoshurlingham",
-    password: "tecnicohur",
+    usuario: process.env.SALA_HURLINGHAM_USER,
+    passwordHash: process.env.SALA_HURLINGHAM_PASSWORD_HASH,
     sala: "HURLINGHAM",
   },
-];
+].filter((user) => user.usuario && user.passwordHash);
 
 export default USERS;
