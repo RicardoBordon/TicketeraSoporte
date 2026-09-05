@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Container,
   Box,
@@ -120,6 +120,7 @@ const obtenerTurnoActual = (turnos) => {
 export default function Tickets({ usuario, onLogout }) {
   const [sala] = useState(usuario?.sala || '');
   const [uid, setUid] = useState('');
+  const uidInputRef = useRef(null);
   const [cat, setCat] = useState('');
   const [criticidad, setCriticidad] = useState('');
   const [turno, setTurno] = useState('');
@@ -226,6 +227,14 @@ export default function Tickets({ usuario, onLogout }) {
     fechaValida
   );
 
+  const handleFormKeyDown = (e) => {
+    if (e.key !== 'Enter' || e.target.name === 'motivo') return;
+
+    if (!camposObligatoriosCompletos) {
+      e.preventDefault();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -261,6 +270,7 @@ export default function Tickets({ usuario, onLogout }) {
       if (data.ok) {
         mostrarToast('¡Ticket enviado con éxito!');
         setUid('');
+        window.requestAnimationFrame(() => uidInputRef.current?.focus());
         setCat('');
         setSubcat('');
         setSubcatPersonalizada('');
@@ -375,7 +385,7 @@ export default function Tickets({ usuario, onLogout }) {
             </Typography>
           </Box>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
             <CardContent sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
               <TextField
                 fullWidth
@@ -396,6 +406,7 @@ export default function Tickets({ usuario, onLogout }) {
                 placeholder="123456"
                 name="uid"
                 value={uid}
+                inputRef={uidInputRef}
                 onChange={(e) => setUid(e.target.value.slice(0, 30))}
                 inputProps={{ maxLength: 30 }}
                 sx={autofillSx}
