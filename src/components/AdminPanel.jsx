@@ -210,6 +210,43 @@ export default function AdminPanel({ onSesionExpirada }) {
               </Stack>
             </Box>
 
+            <Box sx={{ p: 2, border: "1px solid #161515", borderRadius: 2 }}>
+              <Typography variant="h6" sx={{ color: "#142b42", fontWeight: 600, p: 2, mb: 2 }}>
+                Horarios automáticos de turnos
+              </Typography>
+              <Stack spacing={2}>
+                {Object.entries(config.turnos || {}).map(([clave, turno]) => (
+                  <Stack key={clave} direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+                    <Typography sx={{ width: { sm: 90 }, fontWeight: 600 }}>{turno.nombre}</Typography>
+                    <TextField
+                      size="small"
+                      type="time"
+                      label="Desde"
+                      value={turno.inicio}
+                      onChange={(e) => setConfig((prev) => ({
+                        ...prev,
+                        turnos: { ...prev.turnos, [clave]: { ...prev.turnos[clave], inicio: e.target.value } },
+                      }))}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={autofillSx}
+                    />
+                    <TextField
+                      size="small"
+                      type="time"
+                      label="Hasta"
+                      value={turno.fin}
+                      onChange={(e) => setConfig((prev) => ({
+                        ...prev,
+                        turnos: { ...prev.turnos, [clave]: { ...prev.turnos[clave], fin: e.target.value } },
+                      }))}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                      sx={autofillSx}
+                    />
+                  </Stack>
+                ))}
+              </Stack>
+            </Box>
+
             <Box>
               <Typography variant="h6" sx={{ color: "#142b42", fontWeight: 700 }}>Emisores por sala</Typography>
             </Box>

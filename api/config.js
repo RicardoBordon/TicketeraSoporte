@@ -13,6 +13,11 @@ function configPorDefecto() {
     emailDestino: process.env.EMAIL_DESTINO || "",
     clientId: process.env.CLIENT_ID || "",
     clientSecret: process.env.CLIENT_SECRET || "",
+    turnos: {
+      manana: { nombre: "Mañana", inicio: "06:01", fin: "14:00" },
+      tarde: { nombre: "Tarde", inicio: "14:01", fin: "22:00" },
+      noche: { nombre: "Noche", inicio: "22:01", fin: "06:00" },
+    },
     salas: {
       CASEROS: {
         email: process.env.CASEROS_EMAIL || "",
@@ -36,7 +41,11 @@ function configPorDefecto() {
 
 export async function obtenerConfigActual() {
   const guardada = await get(CLAVE_CONFIG);
-  return guardada || configPorDefecto();
+  const predeterminada = configPorDefecto();
+
+  return guardada
+    ? { ...predeterminada, ...guardada, turnos: guardada.turnos || predeterminada.turnos }
+    : predeterminada;
 }
 
 async function intentarGuardar(nuevaConfig) {
@@ -79,6 +88,14 @@ function validarConfig(config) {
   }
   if (!config.clientId || !config.clientSecret) {
     return "Faltan el Client ID o el Client Secret";
+  }
+  if (!config.turnos || typeof config.turnos !== "object") {
+    return "Faltan los horarios de los turnos";
+  }
+  for (const [clave, turno] of Object.entries(config.turnos)) {
+    if (!turno || typeof turno !== "object" || !/^\d{2}:\d{2}$/.test(turno.inicio) || !/^\d{2}:\d{2}$/.test(turno.fin)) {
+      return `Horario inválido para el turno ${clave}`;
+    }
   }
   if (!config.salas || typeof config.salas !== "object") {
     return "Faltan las salas";

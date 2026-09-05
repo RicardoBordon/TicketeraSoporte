@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Container,
   Box,
@@ -61,7 +61,11 @@ const INFRA = [
 const SUBCATEGORIA_PERSONALIZADA = 'Personalizada';
 
 const CRITICIDAD = ['Crítica', 'Alta', 'Media', 'Baja'];
-const TURNOS = ['Mañana', 'Tarde', 'Noche'];
+const TURNOS_POR_DEFECTO = {
+  manana: { nombre: 'Mañana', inicio: '06:01', fin: '14:00' },
+  tarde: { nombre: 'Tarde', inicio: '14:01', fin: '22:00' },
+  noche: { nombre: 'Noche', inicio: '22:01', fin: '06:00' },
+};
 
 
 
@@ -91,12 +95,36 @@ const formatFechaInput = (value) => {
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 };
 
+const minutosDesdeMedianoche = (hora) => {
+  const [horas, minutos] = hora.split(':').map(Number);
+  return horas * 60 + minutos;
+};
+
+const obtenerTurnoActual = (turnos) => {
+  const ahora = new Date();
+  const minutosActuales = ahora.getHours() * 60 + ahora.getMinutes();
+
+  for (const turno of Object.values(turnos)) {
+    const inicio = minutosDesdeMedianoche(turno.inicio);
+    const fin = minutosDesdeMedianoche(turno.fin);
+    const coincide = inicio <= fin
+      ? minutosActuales >= inicio && minutosActuales <= fin
+      : minutosActuales >= inicio || minutosActuales <= fin;
+
+    if (coincide) return turno.nombre;
+  }
+
+  return '';
+};
+
 export default function Tickets({ usuario, onLogout }) {
   const [sala] = useState(usuario?.sala || '');
   const [uid, setUid] = useState('');
   const [cat, setCat] = useState('');
   const [criticidad, setCriticidad] = useState('');
   const [turno, setTurno] = useState('');
+  const [turnoManual, setTurnoManual] = useState(false);
+  const [turnos, setTurnos] = useState(TURNOS_POR_DEFECTO);
   const [fecha, setFecha] = useState(formatFechaLatin(new Date()));
   const [subcat, setSubcat] = useState('');
   const [subcatPersonalizada, setSubcatPersonalizada] = useState('');
@@ -105,6 +133,34 @@ export default function Tickets({ usuario, onLogout }) {
   const [status, setStatus] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+
+    fetch('/api/turnos')
+      .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
+      .then((data) => {
+        if (!activo || !data?.ok) return;
+        setTurnos(data.turnos);
+      })
+      .catch(() => {
+        if (activo) setTurno(obtenerTurnoActual(TURNOS_POR_DEFECTO));
+      });
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const actualizarTurno = () => {
+      if (!turnoManual) setTurno(obtenerTurnoActual(turnos));
+    };
+    actualizarTurno();
+    const intervalo = window.setInterval(actualizarTurno, 60_000);
+
+    return () => window.clearInterval(intervalo);
+  }, [turnos, turnoManual]);
 
   const mostrarToast = (mensaje) => {
     setStatus(mensaje);
@@ -210,6 +266,7 @@ export default function Tickets({ usuario, onLogout }) {
         setSubcatPersonalizada('');
         setCriticidad('');
         setTurno('');
+        setTurnoManual(false);
         setTecnico('');
         setMotivo('');
         setCategoriaAsunto('');
@@ -467,11 +524,14 @@ export default function Tickets({ usuario, onLogout }) {
                   name="turno"
                   value={turno}
                   label="8. Turno"
-                  onChange={(e) => setTurno(e.target.value)}
+                  onChange={(e) => {
+                    setTurno(e.target.value);
+                    setTurnoManual(true);
+                  }}
                 >
-                  {TURNOS.map((t) => (
-                    <MenuItem key={t} value={t}>
-                      {t}
+                  {Object.values(turnos).map(({ nombre }) => (
+                    <MenuItem key={nombre} value={nombre}>
+                      {nombre}
                     </MenuItem>
                   ))}
                 </Select>
