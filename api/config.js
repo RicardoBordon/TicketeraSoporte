@@ -39,6 +39,7 @@ function configPorDefecto() {
   };
 }
 
+// Uso interno (sendMail.js, google-callback.js): config real, con secretos.
 export async function obtenerConfigActual() {
   const guardada = await get(CLAVE_CONFIG);
   const predeterminada = configPorDefecto();
@@ -46,6 +47,53 @@ export async function obtenerConfigActual() {
   return guardada
     ? { ...predeterminada, ...guardada, turnos: guardada.turnos || predeterminada.turnos }
     : predeterminada;
+}
+
+// Versión para mandar al navegador: nunca expone clientSecret ni
+// refreshToken reales, solo si están configurados o no.
+function configParaFrontend(config) {
+  const salas = {};
+  for (const [nombreSala, datos] of Object.entries(config.salas || {})) {
+    salas[nombreSala] = {
+      email: datos.email || "",
+      refreshToken: "",
+      refreshTokenConfigurado: Boolean(datos.refreshToken),
+    };
+  }
+
+  return {
+    emailDestino: config.emailDestino || "",
+    clientId: "",
+    clientIdConfigurado: Boolean(config.clientId),
+    clientSecret: "",
+    clientSecretConfigurado: Boolean(config.clientSecret),
+    turnos: config.turnos,
+    salas,
+  };
+}
+
+// Combina lo que mandó el panel con lo que ya había guardado: si el panel
+// mandó un campo sensible vacío, se conserva el valor anterior en vez de
+// borrarlo. Si mandó algo nuevo, lo reemplaza.
+async function combinarConGuardado(nuevoDesdeFrontend) {
+  const actual = await obtenerConfigActual();
+
+  const salas = {};
+  for (const [nombreSala, datosNuevos] of Object.entries(nuevoDesdeFrontend.salas || {})) {
+    const datosActuales = actual.salas?.[nombreSala] || {};
+    salas[nombreSala] = {
+      email: datosNuevos.email ?? datosActuales.email ?? "",
+      refreshToken: datosNuevos.refreshToken ? datosNuevos.refreshToken : (datosActuales.refreshToken || ""),
+    };
+  }
+
+  return {
+    emailDestino: nuevoDesdeFrontend.emailDestino ?? actual.emailDestino ?? "",
+    clientId: nuevoDesdeFrontend.clientId ? nuevoDesdeFrontend.clientId : (actual.clientId || ""),
+    clientSecret: nuevoDesdeFrontend.clientSecret ? nuevoDesdeFrontend.clientSecret : (actual.clientSecret || ""),
+    turnos: nuevoDesdeFrontend.turnos || actual.turnos,
+    salas,
+  };
 }
 
 async function intentarGuardar(nuevaConfig) {
@@ -115,21 +163,23 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     try {
       const config = await obtenerConfigActual();
-      return res.json({ ok: true, config });
+      return res.json({ ok: true, config: configParaFrontend(config) });
     } catch (error) {
       return res.status(500).json({ ok: false, mensaje: "No se pudo leer la configuración" });
     }
   }
 
   if (req.method === "POST") {
-    const error = validarConfig(req.body);
-    if (error) {
-      return res.status(400).json({ ok: false, mensaje: error });
-    }
-
     try {
-      await guardarConfig(req.body);
-      return res.json({ ok: true });
+      const configCompleta = await combinarConGuardado(req.body);
+
+      const error = validarConfig(configCompleta);
+      if (error) {
+        return res.status(400).json({ ok: false, mensaje: error });
+      }
+
+      await guardarConfig(configCompleta);
+      return res.json({ ok: true, config: configParaFrontend(configCompleta) });
     } catch (error) {
       return res.status(500).json({ ok: false, mensaje: error.message });
     }

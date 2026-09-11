@@ -57,10 +57,17 @@ export default async function handler(req, res) {
     );
     const { tokens } = await oauth2Client.getToken(code);
 
-    const refreshToken = tokens.refresh_token || config.salas?.[datosEstado.sala]?.refreshToken;
-    if (!refreshToken) {
-      return redirigir(req, res, "error", "Google no devolvió un refresh token");
-    }
+    if (!tokens.refresh_token) {
+  return redirigir(
+    req,
+    res,
+    "error",
+    "Google no devolvió un token nuevo (la cuenta ya había autorizado la app antes). " +
+    "Revocá el acceso en https://myaccount.google.com/permissions y volvé a intentarlo."
+  );
+}
+
+const refreshToken = tokens.refresh_token;
 
     oauth2Client.setCredentials(tokens);
     const perfil = await oauth2Client.request({

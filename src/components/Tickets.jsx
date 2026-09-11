@@ -180,7 +180,7 @@ export default function Tickets({ usuario, onLogout }) {
   useEffect(() => {
     if (!showToast || !status.includes('éxito')) return undefined;
 
-    const temporizador = window.setTimeout(cerrarToast, 3000);
+    const temporizador = window.setTimeout(cerrarToast, 2500);
     return () => window.clearTimeout(temporizador);
   }, [showToast, status]);
 
@@ -637,6 +637,7 @@ export default function Tickets({ usuario, onLogout }) {
                   }}
                 >
                   <Box
+                    onClick={(event) => event.stopPropagation()}
                     sx={{
                       width: 'auto',
                       minWidth: 220,

@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 import { google } from "googleapis";
-import nodemailer from "nodemailer";
 import { get } from "@vercel/global-config";
 import { exigirSala } from "./_lib/auth.js";
 
@@ -43,6 +42,25 @@ async function obtenerConfig() {
     console.error("No se pudo leer config de Global Config, uso variables de entorno:", error);
   }
   return configPorDefecto();
+}
+
+// Arma el mensaje en formato RFC 2822 (lo que espera la API de Gmail) y lo
+// codifica en base64url, como exige `users.messages.send`.
+function construirMensajeBase64(remitente, destinatario, asunto, cuerpo) {
+  const mensaje = [
+    `From: ${remitente}`,
+    `To: ${destinatario}`,
+    `Subject: =?utf-8?B?${Buffer.from(asunto, "utf-8").toString("base64")}?=`,
+    "Content-Type: text/plain; charset=utf-8",
+    "",
+    cuerpo,
+  ].join("\r\n");
+
+  return Buffer.from(mensaje)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 export default async function handler(req, res) {
@@ -98,32 +116,13 @@ export default async function handler(req, res) {
       refresh_token: gmail.refreshToken,
     });
 
-    const accessToken = await oauth2Client.getAccessToken();
+    const gmailApi = google.gmail({ version: "v1", auth: oauth2Client });
 
-    if (!accessToken.token) {
-      throw new Error("No se pudo obtener el Access Token");
-    }
+    const esUidValido = /^\d{1,7}$/.test(uid);
+    const fragmentoUid = esUidValido ? `UID ${uid} ` : uid;
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: gmail.email,
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
-        refreshToken: gmail.refreshToken,
-        accessToken: accessToken.token,
-      },
-    });
-
-  const esUidValido = /^\d{1,7}$/.test(uid);
-  const fragmentoUid = esUidValido ? `UID ${uid} ` : uid;
-
-    await transporter.sendMail({
-      from: gmail.email,
-      to: [config.emailDestino],
-      subject: `${salaAutorizada} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`,
-      text: `
+    const asunto = `${salaAutorizada} | ${categoriaAsunto} | ${fragmentoUid} | ${subcategoria}`;
+    const cuerpo = `
 Categoría: ${categoria} — ${subcategoria}
 Criticidad: ${criticidad}
 Sala/Ubicación: ${salaFormateada}
@@ -131,8 +130,19 @@ Máquina/UID: ${uid}
 Motivo: ${motivo || 'Sin motivo'}
 Técnico responsable: ${tecnico}
 Turno/Fecha: ${turno} — ${fecha}
+`;
 
-`});
+    const mensajeCodificado = construirMensajeBase64(
+      gmail.email,
+      config.emailDestino,
+      asunto,
+      cuerpo
+    );
+
+    await gmailApi.users.messages.send({
+      userId: "me",
+      requestBody: { raw: mensajeCodificado },
+    });
 
     return res.status(200).json({
       ok: true,

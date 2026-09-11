@@ -10,6 +10,7 @@ import {
   Alert,
   IconButton,
   InputAdornment,
+  Link,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import autofillSx from '../styles/autofillSx';
@@ -189,6 +190,19 @@ const handleSubmit = async (e) => {
 
             </form>
 
+            <Link
+              href="/info"
+              underline="always"
+              sx={{
+                alignSelf: "center",
+                color: "#0d3b66",
+                fontFamily: "inherit",
+                fontSize: "0.9rem",
+                fontWeight: 600,
+              }}
+            >
+              Información
+            </Link>
 
           </CardContent>
 

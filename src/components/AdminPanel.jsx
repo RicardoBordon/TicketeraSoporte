@@ -25,6 +25,7 @@ export default function AdminPanel({ onSesionExpirada }) {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [credencialSolicitada, setCredencialSolicitada] = useState(null);
+  const [salaGoogleSolicitada, setSalaGoogleSolicitada] = useState(null);
   const [credencialesEditables, setCredencialesEditables] = useState({
     clientId: false,
     clientSecret: false,
@@ -43,7 +44,10 @@ export default function AdminPanel({ onSesionExpirada }) {
     async function cargarConfig() {
       setCargando(true);
       try {
-        const respuesta = await fetch("/api/config", { credentials: "include" });
+        const respuesta = await fetch("/api/config", {
+          credentials: "include",
+          cache: "no-store",
+        });
 
         if (respuesta.status === 401) {
           onSesionExpirada();
@@ -73,6 +77,13 @@ export default function AdminPanel({ onSesionExpirada }) {
     window.history.replaceState({}, document.title, window.location.pathname);
   }, []);
 
+  useEffect(() => {
+    if (mensaje?.tipo !== "success") return undefined;
+
+    const temporizador = window.setTimeout(() => setMensaje(null), 3000);
+    return () => window.clearTimeout(temporizador);
+  }, [mensaje]);
+
   const handleGuardar = async () => {
     setGuardando(true);
     setMensaje(null);
@@ -93,6 +104,7 @@ export default function AdminPanel({ onSesionExpirada }) {
       const data = await respuesta.json();
 
       if (data.ok) {
+        if (data.config) setConfig(data.config);
         setCredencialesEditables({ clientId: false, clientSecret: false });
         setMensaje({ tipo: "success", texto: "Configuración guardada correctamente" });
       } else {
@@ -118,6 +130,56 @@ export default function AdminPanel({ onSesionExpirada }) {
 
   const conectarGoogle = (sala) => {
     window.location.href = `/api/google-auth?sala=${encodeURIComponent(sala)}`;
+  };
+
+  const quitarCuentaGoogle = async (sala) => {
+    const nuevaConfig = {
+      ...config,
+      salas: {
+        ...config.salas,
+        [sala]: {
+          ...config.salas[sala],
+          email: "",
+          refreshToken: "",
+        },
+      },
+    };
+
+    setGuardando(true);
+    setMensaje(null);
+    try {
+      const respuesta = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(nuevaConfig),
+      });
+
+      if (respuesta.status === 401) {
+        onSesionExpirada();
+        return;
+      }
+
+      const data = await respuesta.json();
+      if (!data.ok) {
+        setMensaje({ tipo: "error", texto: data.mensaje || "No se pudo quitar la cuenta" });
+        return;
+      }
+
+      if (data.config) setConfig(data.config);
+      setMensaje({ tipo: "success", texto: `Cuenta de ${sala} quitada correctamente` });
+    } catch (error) {
+      console.error(error);
+      setMensaje({ tipo: "error", texto: "Error de conexión" });
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const confirmarQuitarCuentaGoogle = () => {
+    const sala = salaGoogleSolicitada;
+    setSalaGoogleSolicitada(null);
+    void quitarCuentaGoogle(sala);
   };
 
   const actualizarSala = (sala, campo, valor) => {
@@ -161,17 +223,17 @@ export default function AdminPanel({ onSesionExpirada }) {
       sx={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #3c4146, #2f3f4e)",
-        py: 4,
-        px: 1,
+        py: { xs: 1, sm: 4 },
+        px: { xs: 0, sm: 1 },
       }}
     >
-      <Container maxWidth="md">
+      <Container maxWidth="md" disableGutters sx={{ width: "100%" }}>
         <Card sx={{ borderRadius: 3, boxShadow: 4 }}>
           <Box
             sx={{
               background: "linear-gradient(135deg, #18283d, #3688da)",
               color: "white",
-              p: 3,
+              p: { xs: 2, sm: 3 },
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -192,9 +254,9 @@ export default function AdminPanel({ onSesionExpirada }) {
             </Button>
           </Box>
 
-          <CardContent sx={{ p: 4, display: "flex", flexDirection: "column", gap: 3 }}>
+          <CardContent sx={{ p: { xs: 2, sm: 4 }, display: "flex", flexDirection: "column", gap: 3 }}>
 
-            <Box sx={{ p: 2, border: "1px solid #161515", borderRadius: 2 }}>
+            <Box sx={{ p: { xs: 1, sm: 2 }, border: "1px solid #161515", borderRadius: 2, textAlign: "left" }}>
               <Typography variant="h6" sx={{ color: "#142b42", fontWeight: 600, p:2, mb:2 }}>Configuración general</Typography>
               <Stack spacing={2}>
                 <TextField
@@ -218,6 +280,8 @@ export default function AdminPanel({ onSesionExpirada }) {
                     disabled={!credencialesEditables.clientId}
                     value={config.clientId}
                     onChange={(e) => setConfig((prev) => ({ ...prev, clientId: e.target.value }))}
+                    placeholder={config.clientIdConfigurado ? "•••••••• (ya guardado)" : "No configurado"}
+                    helperText={credencialesEditables.clientId ? "Dejalo en blanco para no cambiarlo." : ""}
                     InputLabelProps={{ shrink: true }}
                     sx={autofillSx}
                   />
@@ -240,6 +304,8 @@ export default function AdminPanel({ onSesionExpirada }) {
                     disabled={!credencialesEditables.clientSecret}
                     value={config.clientSecret}
                     onChange={(e) => setConfig((prev) => ({ ...prev, clientSecret: e.target.value }))}
+                    placeholder={config.clientSecretConfigurado ? "•••••••• (ya guardado)" : "No configurado"}
+                    helperText={credencialesEditables.clientSecret ? "Dejalo en blanco para no cambiarlo." : ""}
                     InputLabelProps={{ shrink: true }}
                     sx={autofillSx}
                   />
@@ -255,13 +321,13 @@ export default function AdminPanel({ onSesionExpirada }) {
               </Stack>
             </Box>
 
-            <Box sx={{ p: 2, border: "1px solid #161515", borderRadius: 2 }}>
+            <Box sx={{ p: { xs: 1, sm: 2 }, border: "1px solid #161515", borderRadius: 2 }}>
               <Typography variant="h6" sx={{ color: "#142b42", fontWeight: 600, p: 2, mb: 2 }}>
                 Horarios automáticos de turnos
               </Typography>
               <Stack spacing={2}>
                 {Object.entries(config.turnos || {}).map(([clave, turno]) => (
-                  <Stack key={clave} direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+                  <Stack key={clave} direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "flex-start", sm: "center" }} sx={{ textAlign: "left" }}>
                     <Typography sx={{ width: { sm: 90 }, fontWeight: 600 }}>{turno.nombre}</Typography>
                     <TextField
                       size="small"
@@ -300,7 +366,7 @@ export default function AdminPanel({ onSesionExpirada }) {
               <Box
                 key={sala}
                 sx={{
-                  p: 2,
+                  p: { xs: 1, sm: 2 },
                   border: "1px solid #161515",
                   borderRadius: 2,
                   display: "flex",
@@ -326,10 +392,20 @@ export default function AdminPanel({ onSesionExpirada }) {
                 <Button
                   variant="outlined"
                   onClick={() => conectarGoogle(sala)}
-                  disabled={!config.clientId || !config.clientSecret}
+                  disabled={!config.clientId && !config.clientIdConfigurado}
                 >
-                  {datos.refreshToken ? "Cambiar cuenta de Google" : "Conectar cuenta de Google"}
+                  {datos.refreshTokenConfigurado ? "Cambiar cuenta de Google" : "Conectar cuenta de Google"}
                 </Button>
+                {datos.refreshTokenConfigurado && (
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setSalaGoogleSolicitada(sala)}
+                    disabled={guardando}
+                  >
+                    Quitar cuenta de Google
+                  </Button>
+                )}
               </Box>
             ))}
 
@@ -364,6 +440,7 @@ export default function AdminPanel({ onSesionExpirada }) {
             }}
           >
             <Box
+              onClick={(event) => event.stopPropagation()}
               sx={{
                 width: "auto",
                 minWidth: 220,
@@ -387,20 +464,33 @@ export default function AdminPanel({ onSesionExpirada }) {
         )}
 
         <Dialog
-          open={Boolean(credencialSolicitada)}
-          onClose={() => setCredencialSolicitada(null)}
+          open={Boolean(credencialSolicitada || salaGoogleSolicitada)}
+          onClose={() => {
+            setCredencialSolicitada(null);
+            setSalaGoogleSolicitada(null);
+          }}
           aria-labelledby="editar-credenciales-titulo"
           PaperProps={{ sx: { backgroundColor: "#ffffff", color: "#142b42" } }}
         >
           <DialogTitle id="editar-credenciales-titulo" sx={{ color: "#142b42", fontWeight: 700 }}>
-            Editar {credencialSolicitada === "clientId" ? "Client ID" : "Client Secret"}
+            {salaGoogleSolicitada ? "Quitar cuenta de Google" : `Editar ${credencialSolicitada === "clientId" ? "Client ID" : "Client Secret"}`}
           </DialogTitle>
           <DialogContent sx={{ color: "#333333" }}>
-            ¿Confirmás que querés habilitar la edición de esta Credencial App de Cloud?
+            {salaGoogleSolicitada
+              ? "¿Seguro desea quitar cuenta de google?"
+              : "¿Confirmás que querés habilitar la edición de esta Credencial App de Cloud?"}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setCredencialSolicitada(null)}>Cancelar</Button>
-            <Button variant="contained" onClick={confirmarEdicionCredencial} autoFocus>
+            <Button onClick={() => {
+              setCredencialSolicitada(null);
+              setSalaGoogleSolicitada(null);
+            }}>Cancelar</Button>
+            <Button
+              variant="contained"
+              color={salaGoogleSolicitada ? "error" : "primary"}
+              onClick={salaGoogleSolicitada ? confirmarQuitarCuentaGoogle : confirmarEdicionCredencial}
+              autoFocus
+            >
               Confirmar
             </Button>
           </DialogActions>

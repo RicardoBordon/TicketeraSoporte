@@ -43,11 +43,11 @@ export default async function handler(req, res) {
     const url = oauth2Client.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
-        scope: [
-        "https://mail.google.com/",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "openid",
-        ],
+      scope: [
+      "https://www.googleapis.com/auth/gmail.send",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "openid",
+],
       state,
     });
 
